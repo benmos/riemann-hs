@@ -1,12 +1,13 @@
-{ cabal, cereal, dataDefault, doctest, errors, filepath, HUnit
+{ mkDerivation, stdenv, ghc,
+  cereal, dataDefault, doctest, errors, filepath, HUnit
 , lens, network, protobuf, QuickCheck, testFramework
 , testFrameworkHunit, testFrameworkQuickcheck2, text, time
 , transformers
 }:
 
-cabal.mkDerivation (self:
+mkDerivation (
 let
-  lib         = self.stdenv.lib;
+  lib         = stdenv.lib;
   isWithin    = p: dirPath: lib.hasPrefix (toString dirPath) (toString p);
   cabalFilter = path: type: (let pathBaseName = baseNameOf path; in
                                !(lib.hasSuffix "~" pathBaseName) &&
@@ -33,10 +34,5 @@ in {
     doctest filepath HUnit QuickCheck testFramework testFrameworkHunit
     testFrameworkQuickcheck2
   ];
-  meta = {
-    homepage = "https://github.com/tel/riemann-hs";
-    description = "A Riemann client for Haskell";
-    license = self.stdenv.lib.licenses.mit;
-    platforms = self.ghc.meta.platforms;
-  };
+  license = stdenv.lib.licenses.mit;
 })

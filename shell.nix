@@ -1,6 +1,6 @@
 let pkgs = import <nixpkgs> {};
-    haskellPackages = pkgs.haskellPackages.override {
-      extension = self: super: {
+    haskellPackages = pkgs.haskellngPackages.override {
+      overrides = self: super: {
         riemann          = self.callPackage ./. {};
       };
     };
