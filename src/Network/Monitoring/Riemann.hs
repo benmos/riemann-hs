@@ -10,23 +10,25 @@ module Network.Monitoring.Riemann (
   sendEvent
   ) where
 
-import Network.Monitoring.Riemann.Types
+import           Network.Monitoring.Riemann.Types
 
-import Data.Int
-import Data.Default
-import Data.Time.Clock.POSIX
-import Data.ProtocolBuffers
-import Data.Serialize.Put
+import           Data.Default
+import           Data.Int
+import           Data.ProtocolBuffers
+import           Data.Serialize.Put
+import           Data.Time.Clock
+import           Data.Time.Clock.POSIX
 
-import Control.Applicative
-import Control.Monad
-import Control.Monad.IO.Class
-import Control.Error
-import Control.Lens
-import Control.Exception
+import qualified Control.Error                    as Error
+import           Control.Exception
+import           Control.Lens
+import qualified Control.Monad                    as CM
+import qualified Control.Monad.IO.Class           as CMIC
+import qualified Control.Monad.Trans.Except       as Except
 
-import Network.Socket hiding (send, sendTo, recv, recvFrom)
-import Network.Socket.ByteString
+import           Network.Socket                   hiding (recv, recvFrom, send,
+                                                   sendTo)
+import           Network.Socket.ByteString
 
 {-%
 
@@ -141,15 +143,16 @@ closeClient :: Client -> IO ()
 closeClient c = either (const $ return ()) (close . fst) $ unClient c
 
 -- | Attempts to forward an event to a client. Fails silently.
-sendEvent :: MonadIO m => Client -> Event -> m ()
-sendEvent c = liftIO . void . runEitherT . sendEvent' c
+sendEvent :: CMIC.MonadIO m => Client -> Event -> m ()
+sendEvent c = CMIC.liftIO . CM.void . Except.runExceptT . sendEvent' c
 
 -- | Attempts to forward an event to a client. If it fails, it'll
 -- return an 'IOException' in the 'Either'.
-sendEvent' :: Client -> Event -> EitherT IOException IO ()
-sendEvent' (UDP (Left e))  _ = liftIO (print e) >> return ()
-sendEvent' (UDP (Right (s, addy))) e = tryIO $ do
-  now <- fmap round getPOSIXTime
+sendEvent' :: Client -> Event -> Except.ExceptT IOException IO ()
+sendEvent' (UDP (Left e))  _ = CMIC.liftIO (print e) >> return ()
+sendEvent' (UDP (Right (s, addy))) e = Error.tryIO $ do
+  current <- getCurrentTime
+  let now = round (utcTimeToPOSIXSeconds current)
   let msg = def & events .~ [e & time ?~ now]
-  void $ sendTo s (runPut $ encodeMessage msg) (addrAddress addy)
+  CM.void $ sendTo s (runPut $ encodeMessage msg) (addrAddress addy)
 

@@ -23,7 +23,6 @@ import GHC.Generics hiding (to, from)
 import qualified GHC.Generics as G
 
 import Data.Int
-import Data.Monoid
 import Data.Maybe
 import Data.Default
 import Data.List
@@ -35,7 +34,6 @@ import qualified Data.Map as M
 import Control.Lens
 import Control.Monad
 import Control.Arrow
-import Control.Applicative
 
 -- $class
 
